@@ -2,7 +2,7 @@
 
 This is a WIP application package for stress and buckling analysis relying heavily on JuAFEM.jl.
 
-##To Do List
+## To Do List
 1. Finding stress tensor in each cell,
 2. Building the element stress stiffness matrices,
 3. Assembling the element stiffness matrices for buckling analysis,
