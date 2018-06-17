@@ -348,7 +348,7 @@ end
 function make_cload(inp_problem::InpLinearElasticity{dim, N, T}) where {dim, N, T}
     cloads = inp_problem.inp_content.cloads
     dh = inp_problem.ch.dh
-    node_dofs = dh.node_dofs
+    node_dofs = inp_problem.metadata.node_dofs
     inds = Int[]
     vals = T[]
     for nodeidx in keys(cloads)
