@@ -19,6 +19,9 @@ function get_Kσs(sp::LinearElasticityProblem{dim, TT}, dofs, cellvalues) where 
         celldofs!(global_dofs, dh, cellidx)
         for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
+            for d in 1:dim
+                ψ_e[(d-1)*dim+1:d*dim, (d-1)*dim+1:d*dim] .= 0
+            end
             for a in 1:n_basefuncs
                 ∇ϕ = shape_gradient(cellvalues, q_point, a)
                 _u = @view dofs[(@view global_dofs[dim*(a-1) + (1:dim)])]
@@ -26,11 +29,11 @@ function get_Kσs(sp::LinearElasticityProblem{dim, TT}, dofs, cellvalues) where 
                 @einsum ϵ[i,j] = 1/2*(u[i,j] + u[j,i])
                 @einsum σ[i,j] = E*ν/(1-ν^2)*δ[i,j]*ϵ[k,k] + E*ν*(1+ν)*ϵ[i,j]
                 for d in 1:dim
-                    ψ_e[(d-1)*dim+1:d*dim, (d-1)*dim+1:d*dim] .= σ
+                    ψ_e[(d-1)*dim+1:d*dim, (d-1)*dim+1:d*dim] .+= σ
                     G[(dim*(d-1)+1):(dim*d), (a-1)*dim+d] .= ∇ϕ
                 end
-                Kσ_e .+= G'*ψ_e*G*dΩ
             end
+            Kσ_e .+= G'*ψ_e*G*dΩ
         end
         Kσs[cellidx] .= Kσ_e
     end
