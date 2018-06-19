@@ -29,4 +29,15 @@ ginfo = assemble(problem, einfo);
 
 # Solve for node displacements
 u = ginfo.K \ ginfo.f
+
+# Get the stiffness matrices for buckling analysis
+K, Kσ = buckling(problem, ginfo, einfo)
+
+using IterativeSolvers
+
+# Find the maximum eigenvalue of system Kσ x = 1/λ K x
+r = lobpcg(Kσ.data, K.data, true, 1)
+
+# Minimum eigenvalue of the system K x = λ Kσ x
+λ = 1/r.λ[1]
 ```
