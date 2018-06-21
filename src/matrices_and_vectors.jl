@@ -158,7 +158,11 @@ function make_f(sp::RectilinearPointLoad)
     dof_cells = sp.metadata.dof_cells
     fdof = sp.force_dof
     force = sp.force
-    f = sparsevec([fdof], [-force], ndofs(sp.ch.dh))
+    if fdof isa Vector
+        f = sparsevec(fdof, [-force for i in 1:length(fdof)], ndofs(sp.ch.dh))
+    else
+        f = sparsevec([fdof], [-force], ndofs(sp.ch.dh))
+    end
     return f
 end
 

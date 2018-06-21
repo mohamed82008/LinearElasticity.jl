@@ -346,7 +346,7 @@ struct CompressedBeam{dim, T, N, M} <: LinearElasticityProblem{dim, T}
     ν::T
     ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
     force::T
-    force_dof::Int
+    force_dof::Vector{Int}
     metadata::Metadata
 end
 
@@ -370,7 +370,7 @@ function CompressedBeam(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force)
     if haskey(rect_grid.grid.nodesets, "down_force") 
         pop!(rect_grid.grid.nodesets, "down_force")
     end
-    addnodeset!(rect_grid.grid, "down_force", x -> top(rect_grid, x) && middlex(rect_grid, x) && (length(nels) == 2 || middlez(rect_grid, x)));
+    addnodeset!(rect_grid.grid, "down_force", x -> top(rect_grid, x) #=&& middlex(rect_grid, x) && (length(nels) == 2 || middlez(rect_grid, x))=#);
 
     # Create displacement field u
     dh = DofHandler(rect_grid.grid)
@@ -388,9 +388,10 @@ function CompressedBeam(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force)
 
     metadata = Metadata(dh)
     
-    fnode = Tuple(getnodeset(rect_grid.grid, "down_force"))[1]
+    #fnode = Tuple(getnodeset(rect_grid.grid, "down_force"))[1]
+    fnodes = [getnodeset(rect_grid.grid, "down_force")...]
     node_dofs = metadata.node_dofs
-    force_dof = node_dofs[2, fnode]
+    force_dof = node_dofs[2, fnodes]
 
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
