@@ -6,7 +6,7 @@ struct RectilinearGrid{dim, T, N, M} <: AbstractGrid{dim, T}
     grid::JuAFEM.Grid{dim, N, T, M}
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
-    corners::NTuple{2, Vec{dim, T}}
+    corners::NTuple{2, JuAFEM.Vec{dim, T}}
 end
 ```
 
@@ -41,7 +41,7 @@ struct RectilinearGrid{dim, T, N, M} <: AbstractGrid{dim, T}
     grid::JuAFEM.Grid{dim, N, T, M}
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
-    corners::NTuple{2, Vec{dim, T}}
+    corners::NTuple{2, JuAFEM.Vec{dim, T}}
 end
 nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim, T, N, M} = N
 nfacespercell(::RectilinearGrid{dim,T,N,M}) where {dim, T, N, M} = M
@@ -61,8 +61,8 @@ nnodes(cell::JuAFEM.Cell) = nnodes(typeof(cell))
 
 function RectilinearGrid(nels::NTuple{dim,Int}, sizes::NTuple{dim,T}) where {dim,T}
     geoshape = dim === 2 ? Quadrilateral : Hexahedron
-    corner1 = Vec{dim}(fill(T(0), dim))
-    corner2 = Vec{dim}((nels .* sizes))
+    corner1 = JuAFEM.Vec{dim}(fill(T(0), dim))
+    corner2 = JuAFEM.Vec{dim}((nels .* sizes))
     grid = generate_grid(geoshape, nels, corner1, corner2);
 
     N = nnodes(geoshape)
