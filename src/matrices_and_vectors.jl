@@ -176,7 +176,7 @@ function make_Kes_and_fes(inp_problem::InpLinearElasticity{dim, N, T, M, TI, GO}
     problem = inp_problem.inp_content
     dh = inp_problem.ch.dh
     E = problem.E
-    ν = problem.mu
+    ν = problem.ν
     ρ = problem.density
 
     refshape = JuAFEM.getrefshape(dh.field_interpolations[1])
@@ -323,7 +323,7 @@ function _make_dloads(fes, inp_problem::InpLinearElasticity{dim, N, T}, facevalu
     problem = inp_problem.inp_content
     grid = inp_problem.ch.dh.grid
     boundary_matrix = grid.boundary_matrix
-    cell_coords = zeros(Vec{dim, T}, N)
+    cell_coords = zeros(JuAFEM.Vec{dim, T}, N)
     n_basefuncs = getnbasefunctions(facevalues)
     for k in keys(problem.dloads)
         t = -problem.dloads[k] # traction = negative the pressure

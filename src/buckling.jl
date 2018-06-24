@@ -1,6 +1,6 @@
 function get_Kσs(sp::LinearElasticityProblem{dim, TT}, dofs, cellvalues) where {dim, TT}
-    E = sp.E
-    ν = sp.ν
+    E = YoungsModulus(sp)
+    ν = PoissonRatio(sp)
     dh = sp.ch.dh
     n = ndofs_per_cell(dh)
     global_dofs = zeros(Int, n)

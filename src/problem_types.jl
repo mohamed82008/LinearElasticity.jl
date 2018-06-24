@@ -289,41 +289,6 @@ end
     *             *
    /////////////////
 
-struct CompressedBeam{dim, T, N, M} <: LinearElasticityProblem{dim, T}
-    rect_grid::RectilinearGrid{dim, T, N, M}
-    E::T
-    ν::T
-    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
-    force::T
-    force_dof::Int
-    metadata::Metadata
-end
-```
-
-`dim`: dimension of the problem
-
-`T`: number type for computations and coordinates
-
-`N`: number of nodes in a cell of the grid
-
-`M`: number of faces in a cell of the grid
-
-
-`rect_grid`: a RectilinearGrid struct
-
-`E`: Young's modulus
-
-`ν`: Poisson's ration
-
-`ch`: a JuAFEM.ConstraintHandler struct
-
-`force`: force at the top center of the beam (positive is downward)
-
-`force_dof`: dof number at which the force is applied
-
-`metadata`:: Metadata having various cell-node-dof relationships
-
-
 API:
 ```
 CompressedBeam(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim}
@@ -340,16 +305,6 @@ force = -1.0;
 problem = CompressedBeam(nels, sizes, E, ν, force)
 ```
 """
-struct CompressedBeam{dim, T, N, M} <: LinearElasticityProblem{dim, T}
-    rect_grid::RectilinearGrid{dim, T, N, M}
-    E::T
-    ν::T
-    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
-    force::T
-    force_dof::Vector{Int}
-    metadata::Metadata
-end
-
 function CompressedBeam(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim}
     iseven(nels[1]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the x and/or z axes.")
 
@@ -370,33 +325,23 @@ function CompressedBeam(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force)
     if haskey(rect_grid.grid.nodesets, "down_force") 
         pop!(rect_grid.grid.nodesets, "down_force")
     end
-    addnodeset!(rect_grid.grid, "down_force", x -> top(rect_grid, x) #=&& middlex(rect_grid, x) && (length(nels) == 2 || middlez(rect_grid, x))=#);
+    addfaceset!(rect_grid.grid, "down_force", x -> top(rect_grid, x) #=&& middlex(rect_grid, x) && (length(nels) == 2 || middlez(rect_grid, x))=#);
 
-    # Create displacement field u
-    dh = DofHandler(rect_grid.grid)
-    push!(dh, :u, dim) # Add a displacement field
-    close!(dh)
-    
-    ch = ConstraintHandler(dh)
+    grid = rect_grid.grid
+    nodes = reinterpret(NTuple{dim, T}, grid.nodes)
+    celltype = JuAFEM.inpcelltype(typeof(grid.cells[1]))
+    cells = reinterpret(NTuple{2^dim, Int}, grid.cells)
+    nodesets = Dict{String,Vector{Int}}("fixed_all"=>collect(getnodeset(grid, "fixed_all")))
+    cellsets = Dict{String,Vector{Int}}()
+    density = zero(T)
+    nodedbcs = Dict{String, Vector{Tuple{Int,T}}}("fixed_all"=>[(i,zero(T)) for i in 1:dim])
+    cloads = Dict{Int, Vector{T}}()
+    facesets = Dict{String,Vector{Tuple{Int,Int}}}("down_force"=>collect(getfaceset(grid, "down_force")))
+    dloads = Dict{String, T}("down_force"=>force)
 
-    #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
-    dbc = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
-    add!(ch, dbc)
-    close!(ch)
-    t = T(0)
-    update!(ch, t)
+    inp = JuAFEM.InpContent(nodes, celltype, cells, nodesets, cellsets, E, ν, density, nodedbcs, cloads, facesets, dloads)
 
-    metadata = Metadata(dh)
-    
-    #fnode = Tuple(getnodeset(rect_grid.grid, "down_force"))[1]
-    fnodes = [getnodeset(rect_grid.grid, "down_force")...]
-    node_dofs = metadata.node_dofs
-    force_dof = node_dofs[2, fnodes]
-
-    N = nnodespercell(rect_grid)
-    M = nfacespercell(rect_grid)
-
-    return CompressedBeam{dim, T, N, M}(rect_grid, E, ν, ch, force, force_dof, metadata)
+    return InpLinearElasticity(inp)
 end
 
-const RectilinearPointLoad{dim, T, N, M} = Union{PointLoadCantilever{dim, T, N, M}, HalfMBB{dim, T, N, M}, CompressedBeam{dim, T, N, M}}
+const RectilinearPointLoad{dim, T, N, M} = Union{PointLoadCantilever{dim, T, N, M}, HalfMBB{dim, T, N, M}}
