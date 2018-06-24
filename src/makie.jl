@@ -12,7 +12,7 @@ function AbstractPlotting.to_gl_indices(cells::AbstractVector{<: JuAFEM.Cell})
     tris
 end
 
-function to_triangle(tris, cell::JuAFEM.Hexahedron)
+function to_triangle(tris, cell::Union{JuAFEM.Hexahedron, JuAFEM.QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, GLTriangle(nodes[1], nodes[2], nodes[5]))
     push!(tris, GLTriangle(nodes[5], nodes[2], nodes[6]))
@@ -30,7 +30,7 @@ function to_triangle(tris, cell::JuAFEM.Hexahedron)
     push!(tris, GLTriangle(nodes[3], nodes[1], nodes[4]))
 end
 
-function to_triangle(tris, cell::JuAFEM.Tetrahedron)
+function to_triangle(tris, cell::Union{JuAFEM.Tetrahedron, JuAFEM.QuadraticTetrahedron})
     nodes = cell.nodes
     push!(tris, GLTriangle(nodes[1], nodes[3], nodes[2]))
     push!(tris, GLTriangle(nodes[3], nodes[4], nodes[2]))
@@ -38,13 +38,13 @@ function to_triangle(tris, cell::JuAFEM.Tetrahedron)
     push!(tris, GLTriangle(nodes[4], nodes[1], nodes[2]))
 end
 
-function to_triangle(tris, cell::JuAFEM.Quadrilateral)
+function to_triangle(tris, cell::Union{JuAFEM.Quadrilateral, JuAFEM.QuadraticQuadrilateral})
     nodes = cell.nodes
     push!(tris, GLTriangle(nodes[1], nodes[2], nodes[3]))
     push!(tris, GLTriangle(nodes[3], nodes[4], nodes[1]))
 end
 
-function to_triangle(tris, cell::JuAFEM.Triangle)
+function to_triangle(tris, cell::Union{JuAFEM.Triangle, JuAFEM.QuadraticTriangle})
     nodes = cell.nodes
     push!(tris, GLTriangle(nodes[1], nodes[2], nodes[3]))
 end
@@ -100,5 +100,18 @@ function visualize(problem::LinearElasticityProblem{dim, T}, u) where {dim, T}
     node_dofs = problem.metadata.node_dofs
     nnodes = JuAFEM.getnnodes(mesh)
     node_displacements = reshape(u[node_dofs], dim, nnodes)
+    visualize(mesh, node_displacements)
+end
+
+function visualize(problem::LinearElasticityProblem{dim, T}) where {dim, T}
+    mesh = problem.ch.dh.grid
+    nnodes = JuAFEM.getnnodes(mesh)
+    node_displacements = zeros(T, dim, nnodes)
+    visualize(mesh, node_displacements)
+end
+
+function visualize(mesh::JuAFEM.Grid{dim, N, T}) where {dim, N, T}
+    nnodes = JuAFEM.getnnodes(mesh)
+    node_displacements = zeros(T, dim, nnodes)
     visualize(mesh, node_displacements)
 end
